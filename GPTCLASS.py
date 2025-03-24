@@ -126,21 +126,27 @@ gpt.create_sessionuuid(otheruuid)
 
 url = 'https://www.vice.com/en/article/how-to-cook-bugs-ants/'
 info=URL_SCRAPING(url)
+prompt_test="Make a cooking recipe"
 message_data = {
-    "query": f"Please simplify the information from this json file: {info}"
+    "query": f"{prompt_test}. Please simplify the information from this json file: {info}"
 }
 gpt.create_message(message_data)
 
-urll='https://www.healthline.com/health/how-to-be-happy'
-infoo=URL_SCRAPING(urll)
-message_dataa = {
-    "query": f"Please simplify the information from this json file: {infoo}"
-}
-gpt.create_message(message_dataa)
+# urll='https://www.healthline.com/health/how-to-be-happy'
+# infoo=URL_SCRAPING(urll)
+# message_dataa = {
+#     "query": f"Please simplify the information from this json file: {infoo}"
+# }
+# gpt.create_message(message_dataa)
 
-urlll='https://www.thegoodtrade.com/features/summer-activities/'
-infooo=URL_SCRAPING(urlll)
-message_dataaa = {
-    "query": f"Please simplify the information from this json file: {infooo}"
-}
-gpt.create_message(message_dataaa)
+# urlll='https://www.thegoodtrade.com/features/summer-activities/'
+# infooo=URL_SCRAPING(urlll)
+# message_dataaa = {
+#     "query": f"Please simplify the information from this json file: {infooo}"
+# }
+# gpt.create_message(message_dataaa)
+
+# message_test ={
+#     "query": f"Create a web scraper using Python and the Beautiful Soup library"
+# }
+# gpt.create_message(message_test)

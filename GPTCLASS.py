@@ -84,7 +84,7 @@ class GPT:
         else:
             print("Error:", response.status_code)
 
-def fetch_simplify_url(urll):
+def URL_SCRAPING(urll):
         response = requests.get(urll)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -125,21 +125,21 @@ gpt.create_sessionuuid(otheruuid)
 # gpt.create_session()
 
 url = 'https://www.vice.com/en/article/how-to-cook-bugs-ants/'
-info=fetch_simplify_url(url)
+info=URL_SCRAPING(url)
 message_data = {
     "query": f"Please simplify the information from this json file: {info}"
 }
 gpt.create_message(message_data)
 
 urll='https://www.healthline.com/health/how-to-be-happy'
-infoo=fetch_simplify_url(urll)
+infoo=URL_SCRAPING(urll)
 message_dataa = {
     "query": f"Please simplify the information from this json file: {infoo}"
 }
 gpt.create_message(message_dataa)
 
 urlll='https://www.thegoodtrade.com/features/summer-activities/'
-infooo=fetch_simplify_url(urlll)
+infooo=URL_SCRAPING(urlll)
 message_dataaa = {
     "query": f"Please simplify the information from this json file: {infooo}"
 }

@@ -84,27 +84,42 @@ class GPT:
         else:
             print("Error:", response.status_code)
 
-def URL_SCRAPING(urll):
-        response = requests.get(urll)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
+    def URL_SCRAPING(self, urll):
+            response = requests.get(urll)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
             
-            title = soup.title.string if soup.title else 'No title'
-            paragraphs = [p.get_text() for p in soup.find_all('p')]
+                title = soup.title.string if soup.title else 'No title'
+                paragraphs = [p.get_text() for p in soup.find_all('p')]
             
-            simplified_info = {
-                'title': title,
-                'paragraphs': paragraphs
-            }
+                simplified_info = {
+                    'title': title,
+                    'paragraphs': paragraphs
+                }
             
-            json_data = json.dumps(simplified_info, indent=4)
+                json_data = json.dumps(simplified_info, indent=4)
             
-            print(json_data)
+                print(json_data)
         
-            return json_data
-        else:
-            print(f"Failed to fetch the URL: {response.status_code}")
-            return None
+                return json_data
+            else:
+                print(f"Failed to fetch the URL: {response.status_code}")
+                return None
+        
+    def Add_Source(self, uuid, url_string):
+            urln = f'https://app.gpt-trainer.com/api/v1/chatbot/{uuid}/data-source/url'
+            data = {
+            "url": url_string
+            }
+
+            response = requests.post(urln, headers=self.headers, json=data)
+
+            if response.status_code == 200:
+                print("Request successful!")
+                print(response.json())
+            else:
+                print("Request failed with status code:", response.status_code)
+                print(response.text)
 
 
 
@@ -120,16 +135,19 @@ chatbot_data = {
 }
 
 # gpt.create_chatbot(chatbot_data)
-otheruuid='140b54b76e594762abb4c9f7985d826d'
-gpt.create_sessionuuid(otheruuid)
+chatbotuuid='140b54b76e594762abb4c9f7985d826d'
+gpt.create_sessionuuid(chatbotuuid)
 # gpt.create_session()
 
 url = 'https://www.vice.com/en/article/how-to-cook-bugs-ants/'
-info=URL_SCRAPING(url)
+info=gpt.URL_SCRAPING(url)
 prompt_test="Make a cooking recipe"
 message_data = {
     "query": f"{prompt_test}. Please simplify the information from this json file: {info}"
 }
+
+gpt.Add_Source(chatbotuuid, url)
+
 gpt.create_message(message_data)
 
 # urll='https://www.healthline.com/health/how-to-be-happy'

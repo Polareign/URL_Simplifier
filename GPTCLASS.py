@@ -120,8 +120,43 @@ class GPT:
             else:
                 print("Request failed with status code:", response.status_code)
                 print(response.text)
+                
+            # urlnn = f'https://app.gpt-trainer.com/api/v1/chatbot/{uuid}/data-source/update'
+            # response = requests.post(urlnn, headers=self.headers, json=data)
 
+            # if response.status_code == 200:
+            #     print("Request successful!")
+            #     print(response.json())
+            # else:
+            #     print("Request failed with status code:", response.status_code)
+            #     print(response.text)
 
+    def Update_Source(self, uuids):
+            url = 'https://app.gpt-trainer.com/api/v1/data-sources/url/re-scrape'
+            data = {
+                "uuids": uuids
+            }
+
+            response = requests.post(url, headers=self.headers, json=data)
+
+            if response.status_code == 200:
+                print("Request successful!")
+                print(response.json())
+            else:
+                print("Request failed with status code:", response.status_code)
+                print(response.text)
+
+    def Delete_Source(self, uuid):
+            url = f'https://app.gpt-trainer.com/api/v1/data-source/{uuid}/delete'
+
+            response = requests.post(url, headers=self.headers)
+
+            if response.status_code == 200:
+                print("Request successful!")
+                print(response.json())
+            else:
+                print("Request failed with status code:", response.status_code)
+                print(response.text)
 
 api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI'
 gpt = GPT(api_key)
@@ -135,36 +170,38 @@ chatbot_data = {
 }
 
 # gpt.create_chatbot(chatbot_data)
-chatbotuuid='140b54b76e594762abb4c9f7985d826d'
+chatbotuuid="140b54b76e594762abb4c9f7985d826d"
 gpt.create_sessionuuid(chatbotuuid)
 # gpt.create_session()
 
+# Test 1
+
 url = 'https://www.vice.com/en/article/how-to-cook-bugs-ants/'
-info=gpt.URL_SCRAPING(url)
-prompt_test="Make a cooking recipe"
+prompt_test="Make a cooking recipe for ants"
 message_data = {
-    "query": f"{prompt_test}. Please simplify the information from this json file: {info}"
+    "query": f"{prompt_test}"
 }
 
-gpt.Add_Source(chatbotuuid, url)
+gpt.Add_Source(chatbotuuid, url) # Works
 
-gpt.create_message(message_data)
+# gpt.Update_Source([chatbotuuid]) # Not Needed
 
-# urll='https://www.healthline.com/health/how-to-be-happy'
-# infoo=URL_SCRAPING(urll)
-# message_dataa = {
-#     "query": f"Please simplify the information from this json file: {infoo}"
-# }
-# gpt.create_message(message_dataa)
+gpt.create_message(message_data) # Works
 
-# urlll='https://www.thegoodtrade.com/features/summer-activities/'
-# infooo=URL_SCRAPING(urlll)
-# message_dataaa = {
-#     "query": f"Please simplify the information from this json file: {infooo}"
-# }
-# gpt.create_message(message_dataaa)
+gpt.Delete_Source(url) # Not Working
 
-# message_test ={
-#     "query": f"Create a web scraper using Python and the Beautiful Soup library"
-# }
-# gpt.create_message(message_test)
+# Test 2
+
+uurl = 'https://www.sciencelearn.org.nz/resources/303-how-birds-fly'
+pprompt_test="Types of ways birds fly"
+mmessage_data = {
+    "query": f"{pprompt_test}"
+}
+
+gpt.Add_Source(chatbotuuid, uurl) # Works
+
+# gpt.Update_Source([chatbotuuid]) # Not Needed
+
+gpt.create_message(mmessage_data) # Works
+
+gpt.Delete_Source(uurl) # Not Working

@@ -78,9 +78,16 @@ class GPT:
         messageurl = f'https://app.gpt-trainer.com/api/v1/session/{self.sessionuuid}/message/stream'
         response = requests.post(messageurl, headers=self.headers, json=message_data, stream=True)
 
+        output_text=""
+
         if response.status_code == 200:
              for line in response.iter_lines(decode_unicode=True):
                 print(line + '\n')
+                output_text+= line + '\n'
+             print("Response saved to {output.text}!")
+             if output_text:
+                 with open('output.txt', 'w') as f:
+                     f.write(output_text)
         else:
             print("Error:", response.status_code)
 
@@ -117,19 +124,12 @@ class GPT:
             if response.status_code == 200:
                 print("Request successful!")
                 print(response.json())
+                source_uuid= response.json().get('uuid')
+                return source_uuid
             else:
                 print("Request failed with status code:", response.status_code)
                 print(response.text)
-                
-            # urlnn = f'https://app.gpt-trainer.com/api/v1/chatbot/{uuid}/data-source/update'
-            # response = requests.post(urlnn, headers=self.headers, json=data)
-
-            # if response.status_code == 200:
-            #     print("Request successful!")
-            #     print(response.json())
-            # else:
-            #     print("Request failed with status code:", response.status_code)
-            #     print(response.text)
+                return None
 
     def Update_Source(self, uuids):
             url = 'https://app.gpt-trainer.com/api/v1/data-sources/url/re-scrape'
@@ -182,13 +182,13 @@ message_data = {
     "query": f"{prompt_test}"
 }
 
-gpt.Add_Source(chatbotuuid, url) # Works
+urluuid=gpt.Add_Source(chatbotuuid, url) # Works
 
 # gpt.Update_Source([chatbotuuid]) # Not Needed
 
 gpt.create_message(message_data) # Works
 
-gpt.Delete_Source(url) # Not Working
+gpt.Delete_Source(urluuid) # Runs but does not delete the url
 
 # Test 2
 
@@ -198,10 +198,10 @@ mmessage_data = {
     "query": f"{pprompt_test}"
 }
 
-gpt.Add_Source(chatbotuuid, uurl) # Works
+# urluuid=gpt.Add_Source(chatbotuuid, uurl) # Works
 
-# gpt.Update_Source([chatbotuuid]) # Not Needed
+# # gpt.Update_Source([chatbotuuid]) # Not Needed
 
-gpt.create_message(mmessage_data) # Works
+# gpt.create_message(mmessage_data) # Works
 
-gpt.Delete_Source(uurl) # Not Working
+# gpt.Delete_Source(urluuid) # Runs but does not delete the url

@@ -198,10 +198,10 @@ mmessage_data = {
     "query": f"{pprompt_test}"
 }
 
-# urluuid=gpt.Add_Source(chatbotuuid, uurl) # Works
+urluuid=gpt.Add_Source(chatbotuuid, uurl) # Works
 
-# # gpt.Update_Source([chatbotuuid]) # Not Needed
+# gpt.Update_Source([chatbotuuid]) # Not Needed
 
-# gpt.create_message(mmessage_data) # Works
+gpt.create_message(mmessage_data) # Works
 
-# gpt.Delete_Source(urluuid) # Runs but does not delete the url
+gpt.Delete_Source(urluuid) # Runs but does not delete the url

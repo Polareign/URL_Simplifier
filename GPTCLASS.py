@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import time
 
 class GPT:
     def __init__(self, api_key):
@@ -125,6 +126,7 @@ class GPT:
                 print("Request successful!")
                 print(response.json())
                 source_uuid= response.json().get('uuid')
+                print(source_uuid)
                 return source_uuid
             else:
                 print("Request failed with status code:", response.status_code)
@@ -186,7 +188,11 @@ urluuid=gpt.Add_Source(chatbotuuid, url) # Works
 
 # gpt.Update_Source([chatbotuuid]) # Not Needed
 
+time.sleep(60)
+
 gpt.create_message(message_data) # Works
+
+time.sleep(20)
 
 gpt.Delete_Source(urluuid) # Runs but does not delete the url
 
@@ -202,6 +208,10 @@ urluuid=gpt.Add_Source(chatbotuuid, uurl) # Works
 
 # gpt.Update_Source([chatbotuuid]) # Not Needed
 
+time.sleep(60)
+
 gpt.create_message(mmessage_data) # Works
+
+time.sleep(20)
 
 gpt.Delete_Source(urluuid) # Runs but does not delete the url

@@ -178,40 +178,21 @@ gpt.create_sessionuuid(chatbotuuid)
 
 # Test 1
 
-url = 'https://www.vice.com/en/article/how-to-cook-bugs-ants/'
+url = ['https://www.vice.com/en/article/how-to-cook-bugs-ants/','https://www.sciencelearn.org.nz/resources/303-how-birds-fly','https://hypixel.net/threads/in-depth-lcm-guide.5543033/']
 prompt_test="Make a cooking recipe for ants"
 message_data = {
     "query": f"{prompt_test}"
 }
 
-urluuid=gpt.Add_Source(chatbotuuid, url) # Works
+for x, url in enumerate(url):
+    urluuid=gpt.Add_Source(chatbotuuid, url) # Works
 
-# gpt.Update_Source([chatbotuuid]) # Not Needed
+    # gpt.Update_Source([chatbotuuid]) # Not Needed
 
-time.sleep(60)
+    time.sleep(60)
 
-gpt.create_message(message_data) # Works
+    gpt.create_message(message_data) # Works
 
-time.sleep(20)
+    time.sleep(20)
 
-gpt.Delete_Source(urluuid) # Runs but does not delete the url
-
-# Test 2
-
-uurl = 'https://www.sciencelearn.org.nz/resources/303-how-birds-fly'
-pprompt_test="Types of ways birds fly"
-mmessage_data = {
-    "query": f"{pprompt_test}"
-}
-
-urluuid=gpt.Add_Source(chatbotuuid, uurl) # Works
-
-# gpt.Update_Source([chatbotuuid]) # Not Needed
-
-time.sleep(60)
-
-gpt.create_message(mmessage_data) # Works
-
-time.sleep(20)
-
-gpt.Delete_Source(urluuid) # Runs but does not delete the url
+    gpt.Delete_Source(urluuid) # Works

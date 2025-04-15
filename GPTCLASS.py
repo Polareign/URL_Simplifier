@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
+import csv
 
 class GPT:
     def __init__(self, api_key):
@@ -74,23 +75,25 @@ class GPT:
     def create_message(self, message_data):
         if not self.sessionuuid:
             print("Session UUID not found. Create the session first.")
-            return
-        
+            return None
+
         messageurl = f'https://app.gpt-trainer.com/api/v1/session/{self.sessionuuid}/message/stream'
         response = requests.post(messageurl, headers=self.headers, json=message_data, stream=True)
 
-        output_text=""
-
         if response.status_code == 200:
-             for line in response.iter_lines(decode_unicode=True):
-                print(line + '\n')
-                output_text+= line + '\n'
-             print("Response saved to {output.text}!")
-             if output_text:
-                 with open('output.txt', 'w') as f:
-                     f.write(output_text)
+            output_text = ""
+            for line in response.iter_lines(decode_unicode=True):
+                output_text += line + '\n'
+
+            if output_text.strip(): 
+                return output_text 
+            else:
+                print("Empty response received from the server.")
+                return None
         else:
-            print("Error:", response.status_code)
+            print(f"Error: Received status code {response.status_code}")
+            print(f"Response content: {response.text}")
+            return None
 
     def URL_SCRAPING(self, urll):
             response = requests.get(urll)
@@ -176,23 +179,70 @@ chatbotuuid="140b54b76e594762abb4c9f7985d826d"
 gpt.create_sessionuuid(chatbotuuid)
 # gpt.create_session()
 
+csv_file = "output.csv"
+
+# Headers for the CSV file
+csv_headers = ["Name", "School", "Department", "Email", "Research Interests", "Bio", "Other Links"]
+
+with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
+    writer = csv.writer(file)
+    writer.writerow(csv_headers)
+
+# Corresponding prompts for each URL
+prompts = [
+    "Name, School, Values, Facts, Bio, Other links, all in different columns",
+    "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns",
+    "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns"
+]
+
+url = ['https://en.wikipedia.org/wiki/Jeremy_Siegel','https://www.collegeessayguy.com/blog/write-good-hook-for-essay','https://admissionsight.com/how-hard-is-it-to-get-into-upenn/']
+
 # Test 1
 
-url = ['https://www.vice.com/en/article/how-to-cook-bugs-ants/','https://www.sciencelearn.org.nz/resources/303-how-birds-fly','https://hypixel.net/threads/in-depth-lcm-guide.5543033/']
-prompt_test="Make a cooking recipe for ants"
-message_data = {
-    "query": f"{prompt_test}"
-}
-
 for x, url in enumerate(url):
-    urluuid=gpt.Add_Source(chatbotuuid, url) # Works
+    prompt_test = prompts[x]
+    message_data = {
+        "query": f"{prompt_test}"
+    }
 
-    # gpt.Update_Source([chatbotuuid]) # Not Needed
+    urluuid = gpt.Add_Source(chatbotuuid, url)
+    if urluuid:
+        print(f"Source added successfully with UUID: {urluuid}")
+    else:
+        print(f"Failed to add source for URL: {url}")
+        continue
 
     time.sleep(60)
 
-    gpt.create_message(message_data) # Works
+    try:
+        response = gpt.create_message(message_data)
+
+        if response:
+            lines = response.split("\n")
+            extracted_data = [
+                lines[0] if len(lines) > 0 else "", 
+                lines[1] if len(lines) > 1 else "",  
+                lines[2] if len(lines) > 2 else "", 
+                lines[3] if len(lines) > 3 else "",  
+                lines[4] if len(lines) > 4 else "",  
+                lines[5] if len(lines) > 5 else "",  
+                lines[6] if len(lines) > 6 else ""  
+            ]
+
+            with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                writer.writerow(extracted_data)
+        else:
+            print(f"Failed to create message for URL: {url}")
+            continue
+
+    except Exception as e:
+        print(f"Error processing response for URL: {url}. Error: {e}")
 
     time.sleep(20)
 
-    gpt.Delete_Source(urluuid) # Works
+    try:
+        gpt.Delete_Source(urluuid)
+        print(f"Source with UUID {urluuid} deleted successfully.")
+    except Exception as e:
+        print(f"Error deleting source with UUID {urluuid}. Error: {e}")

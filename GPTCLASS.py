@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import time
 import csv
+import pandas as pd
 
 class GPT:
     def __init__(self, api_key):
@@ -163,6 +164,63 @@ class GPT:
                 print("Request failed with status code:", response.status_code)
                 print(response.text)
 
+    def URL(self, chatbotuuid, url_list, prompt, csv_headers):
+            csv_file = "output.csv"
+
+            with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                writer.writerow(csv_headers)
+
+            for url in url_list:
+                message_data = {"query": f"{prompt}"}
+
+                urluuid = gpt.Add_Source(chatbotuuid, url)
+                if not urluuid:
+                    print(f"Failed to add source for URL: {url}")
+                    continue
+
+                time.sleep(60)
+
+                try:
+                    response = gpt.create_message(message_data)
+
+                    if response:
+                        lines = response.split("\n")
+                        extracted_data = ["|" + lines[i] + "|" if i < len(lines) else "|" for i in range(len(csv_headers))]
+
+                        with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
+                            writer = csv.writer(file)
+                            writer.writerow([url] + extracted_data)
+
+                    else:
+                        print(f"Failed to create message for URL: {url}")
+                        continue
+
+                except Exception as e:
+                    print(f"Error processing response for URL: {url}. Error: {e}")
+
+                time.sleep(20)
+
+                try:
+                    gpt.Delete_Source(urluuid)
+                    print(f"Source with UUID {urluuid} deleted successfully.")
+                except Exception as e:
+                    print(f"Error deleting source with UUID {urluuid}. Error: {e}")
+
+            df = pd.read_csv(csv_file)
+
+            writer = pd.ExcelWriter("formatted_output.xlsx", engine="xlsxwriter")
+            df.to_excel(writer, index=False, sheet_name="Faculty Data")
+
+            workbook = writer.book
+            worksheet = writer.sheets["Faculty Data"]
+
+            for idx, col in enumerate(df.columns):
+                max_length = max(df[col].astype(str).apply(len).max(), len(col))
+                worksheet.set_column(idx, idx, max_length + 2)
+            writer.close()
+            print("Formatted output saved as formatted_output.xlsx")
+
 api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI'
 gpt = GPT(api_key)
 
@@ -179,70 +237,11 @@ chatbotuuid="140b54b76e594762abb4c9f7985d826d"
 gpt.create_sessionuuid(chatbotuuid)
 # gpt.create_session()
 
-csv_file = "output.csv"
-
-# Headers for the CSV file
-csv_headers = ["Name", "School", "Department", "Email", "Research Interests", "Bio", "Other Links"]
-
-with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
-    writer = csv.writer(file)
-    writer.writerow(csv_headers)
-
-# Corresponding prompts for each URL
 prompts = [
-    "Name, School, Values, Facts, Bio, Other links, all in different columns",
     "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns",
-    "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns"
 ]
 
-url = ['https://en.wikipedia.org/wiki/Jeremy_Siegel','https://www.collegeessayguy.com/blog/write-good-hook-for-essay','https://admissionsight.com/how-hard-is-it-to-get-into-upenn/']
+url = ['https://finance.wharton.upenn.edu/~itayg/','https://adamgrant.net/', 'https://leadership.wharton.upenn.edu/mike-useem/', 'https://jonahberger.com/']
 
-# Test 1
-
-for x, url in enumerate(url):
-    prompt_test = prompts[x]
-    message_data = {
-        "query": f"{prompt_test}"
-    }
-
-    urluuid = gpt.Add_Source(chatbotuuid, url)
-    if urluuid:
-        print(f"Source added successfully with UUID: {urluuid}")
-    else:
-        print(f"Failed to add source for URL: {url}")
-        continue
-
-    time.sleep(60)
-
-    try:
-        response = gpt.create_message(message_data)
-
-        if response:
-            lines = response.split("\n")
-            extracted_data = [
-                lines[0] if len(lines) > 0 else "", 
-                lines[1] if len(lines) > 1 else "",  
-                lines[2] if len(lines) > 2 else "", 
-                lines[3] if len(lines) > 3 else "",  
-                lines[4] if len(lines) > 4 else "",  
-                lines[5] if len(lines) > 5 else "",  
-                lines[6] if len(lines) > 6 else ""  
-            ]
-
-            with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
-                writer = csv.writer(file)
-                writer.writerow(extracted_data)
-        else:
-            print(f"Failed to create message for URL: {url}")
-            continue
-
-    except Exception as e:
-        print(f"Error processing response for URL: {url}. Error: {e}")
-
-    time.sleep(20)
-
-    try:
-        gpt.Delete_Source(urluuid)
-        print(f"Source with UUID {urluuid} deleted successfully.")
-    except Exception as e:
-        print(f"Error deleting source with UUID {urluuid}. Error: {e}")
+csv_headers = ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"]
+gpt.URL(chatbotuuid, url, prompts, csv_headers)

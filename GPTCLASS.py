@@ -4,6 +4,8 @@ import json
 import time
 import csv
 import pandas as pd
+import xlsxwriter
+import subprocess
 
 class GPT:
     def __init__(self, api_key):
@@ -164,34 +166,38 @@ class GPT:
                 print("Request failed with status code:", response.status_code)
                 print(response.text)
 
-    def URL(self, chatbotuuid, url_list, prompt, csv_headers):
+    def URL(self, chatbotuuid, url_list, prompts, csv_headers):
             csv_file = "output.csv"
 
             with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
-                writer.writerow(csv_headers)
+                writer.writerow(["URL"] + csv_headers)
 
-            for url in url_list:
-                message_data = {"query": f"{prompt}"}
+            for idx, url in enumerate(url_list):
+                # Create a new session for each URL
+                self.create_sessionuuid(chatbotuuid)
 
-                urluuid = gpt.Add_Source(chatbotuuid, url)
+                prompt = prompts[0] if len(prompts) == 1 else prompts[idx]
+                message_data = {"query": prompt}
+
+                urluuid = self.Add_Source(chatbotuuid, url)
                 if not urluuid:
                     print(f"Failed to add source for URL: {url}")
                     continue
 
-                time.sleep(60)
+                time.sleep(10)
 
                 try:
-                    response = gpt.create_message(message_data)
-
+                    response = self.create_message(message_data)
                     if response:
-                        lines = response.split("\n")
-                        extracted_data = ["|" + lines[i] + "|" if i < len(lines) else "|" for i in range(len(csv_headers))]
+                        lines = [line.strip() for line in response.strip().split('\n') if line.strip()]
+                        while len(lines) < len(csv_headers):
+                            lines.append("")
+                        extracted_data = lines[:len(csv_headers)]
 
                         with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
                             writer = csv.writer(file)
                             writer.writerow([url] + extracted_data)
-
                     else:
                         print(f"Failed to create message for URL: {url}")
                         continue
@@ -199,27 +205,49 @@ class GPT:
                 except Exception as e:
                     print(f"Error processing response for URL: {url}. Error: {e}")
 
-                time.sleep(20)
+                time.sleep(10)
 
                 try:
-                    gpt.Delete_Source(urluuid)
+                    self.Delete_Source(urluuid)
                     print(f"Source with UUID {urluuid} deleted successfully.")
                 except Exception as e:
                     print(f"Error deleting source with UUID {urluuid}. Error: {e}")
 
             df = pd.read_csv(csv_file)
-
             writer = pd.ExcelWriter("formatted_output.xlsx", engine="xlsxwriter")
-            df.to_excel(writer, index=False, sheet_name="Faculty Data")
-
+            df.to_excel(writer, index=False, sheet_name="Data")
             workbook = writer.book
-            worksheet = writer.sheets["Faculty Data"]
-
+            worksheet = writer.sheets["Data"]
             for idx, col in enumerate(df.columns):
                 max_length = max(df[col].astype(str).apply(len).max(), len(col))
                 worksheet.set_column(idx, idx, max_length + 2)
             writer.close()
             print("Formatted output saved as formatted_output.xlsx")
+
+            with open("output2.tex", "w", encoding="utf-8") as f:
+                f.write(df.to_latex(index=False, escape=True, longtable=True))
+            print("LaTeX table saved as output2.tex")
+
+            main_tex_content = r"""
+            \documentclass{article}
+            \usepackage{longtable}
+            \usepackage{booktabs}
+            \usepackage[margin=1in]{geometry}
+            \usepackage{hyperref}
+            \begin{document}
+            \section*{Extracted Data Table}
+            \input{output2.tex}
+            \end{document}
+            """
+
+            with open("main.tex", "w", encoding="utf-8") as f:
+                f.write(main_tex_content.strip())
+
+            try:
+                subprocess.run(["pdflatex", "main.tex"], check=True)
+                print("PDF generated as main.pdf")
+            except Exception as e:
+                print(f"PDF generation failed: {e}")
 
 api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI'
 gpt = GPT(api_key)

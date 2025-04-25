@@ -224,7 +224,7 @@ class GPT:
             f.write(markdown_table)
         print("Markdown table saved to output.md")
 
-api_key = 'your_api_key' #Replace with your key
+api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI' #Replace with your key
 gpt = GPT(api_key)
 
 chatbot_data = {
@@ -235,10 +235,10 @@ chatbot_data = {
     "visibility": "public"
 }
 
-# gpt.create_chatbot(chatbot_data)
-chatbotuuid="140b54b76e594762abb4c9f7985d826d" #Replace with your chatbot uuid
+gpt.create_chatbot(chatbot_data)
+chatbotuuid="140b54b76e594762abb4c9f7985d826d"
 gpt.create_sessionuuid(chatbotuuid)
-# gpt.create_session()
+gpt.create_session()
 
 prompts = [
     "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns",

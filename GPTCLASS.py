@@ -4,6 +4,7 @@ import json
 import time
 import csv
 import pandas as pd
+import os
 
 class GPT:
     def __init__(self, api_key):
@@ -228,6 +229,42 @@ class GPT:
             f.write(markdown_table)
         print("Markdown table saved to output.md")
 
+    def readlafile(self, file):
+
+        if not os.path.exists(file):
+            print(f"File not found: {file}")
+            return None
+        file_extension = os.path.splitext(file)[1].lower()
+        if file_extension == ".json":
+            return self.readjson(file)
+        elif file_extension == ".csv":
+            return self.readcsv(file)
+        elif file_extension == ".txt":
+            return self.readtxt(file)
+        else:
+            print(f"Unsupported file format: {file_extension}")
+            return None
+
+    def readjson(self, file):
+        with open(file, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        print(f"Loaded JSON file: {file}")
+        return data
+
+    def readcsv(self, file):
+        data = []
+        with open(file, "r", newline="", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                data.append(row)
+        print(f"Loaded CSV file: {file}")
+        return data
+
+    def readtxt(self, file):
+        with open(file, "r", encoding="utf-8") as file:
+            data = [line.strip() for line in file.readlines()]
+        print(f"Loaded TXT file: {file}")
+        return data
 
 api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI'
 gpt = GPT(api_key)
@@ -246,10 +283,15 @@ gpt.create_sessionuuid(chatbotuuid)
 prompts = [
     "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns",
 ]
-url=[]
-url.append(['https://finance.wharton.upenn.edu/~itayg/', 'https://adamgrant.net/', 'https://leadership.wharton.upenn.edu/mike-useem/'])
-url.append(['https://jonahberger.com/'])
-url.append(['https://www.collegeessayguy.com/blog/upenn-university-pennsylvania-supplemental-essay','https://www.upenn.edu/about/university-values'])
+
+urltests = gpt.readlafile("tests.txt")
+urltests = [line.split("|") for line in urltests]
+urltest = []
+for row in urltests:
+    for line in row:
+        urls = [url.strip() for url in line.split(",") if url.strip()]
+        if urls:
+            urltest.append(urls)
 
 csv_headers = ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"]
-gpt.URL(chatbotuuid, url, prompts, csv_headers)
+gpt.URL(chatbotuuid, urltest, prompts, csv_headers)

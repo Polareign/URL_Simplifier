@@ -4,18 +4,16 @@ import json
 import time
 import csv
 import pandas as pd
-import os
 
 class GPT:
     def __init__(self, api_key):
-        url = 'https://app.gpt-trainer.com/api/v1/chatbot/create'
-        self.url = url
-        self.sessionuuid = None
+        self.url = 'https://app.gpt-trainer.com/api/v1/chatbot/create'
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {api_key}'
         }
         self.uuid = None
+        self.sessionuuid = None
 
     def create_chatbot(self, data):
         response = requests.post(self.url, headers=self.headers, json=data)
@@ -32,7 +30,6 @@ class GPT:
         if not self.uuid:
             print("UUID not found. Create the chatbot first.")
             return
-
         otherurl = f'https://app.gpt-trainer.com/api/v1/chatbot/{self.uuid}/agent/create'
         response = requests.post(otherurl, headers=self.headers, json=agent_data)
         if response.status_code == 200:
@@ -46,7 +43,6 @@ class GPT:
         if not self.uuid:
             print("UUID not found. Create the chatbot first.")
             return
-
         sessionurl = f'https://app.gpt-trainer.com/api/v1/chatbot/{self.uuid}/session/create'
         response = requests.post(sessionurl, headers=self.headers)
         if response.status_code == 200:
@@ -63,7 +59,6 @@ class GPT:
         if not self.uuid:
             print("UUID not found. Create the chatbot first.")
             return
-
         sessionurl = f'https://app.gpt-trainer.com/api/v1/chatbot/{self.uuid}/session/create'
         response = requests.post(sessionurl, headers=self.headers)
         if response.status_code == 200:
@@ -79,15 +74,12 @@ class GPT:
         if not self.sessionuuid:
             print("Session UUID not found. Create the session first.")
             return None
-
         messageurl = f'https://app.gpt-trainer.com/api/v1/session/{self.sessionuuid}/message/stream'
         response = requests.post(messageurl, headers=self.headers, json=message_data, stream=True)
-
         if response.status_code == 200:
             output_text = ""
             for line in response.iter_lines(decode_unicode=True):
                 output_text += line + '\n'
-
             if output_text.strip():
                 return output_text
             else:
@@ -102,19 +94,14 @@ class GPT:
         response = requests.get(urll)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-
             title = soup.title.string if soup.title else 'No title'
             paragraphs = [p.get_text() for p in soup.find_all('p')]
-
             simplified_info = {
                 'title': title,
                 'paragraphs': paragraphs
             }
-
             json_data = json.dumps(simplified_info, indent=4)
-
             print(json_data)
-
             return json_data
         else:
             print(f"Failed to fetch the URL: {response.status_code}")
@@ -122,176 +109,97 @@ class GPT:
 
     def Add_Source(self, uuid, url_string):
         urln = f'https://app.gpt-trainer.com/api/v1/chatbot/{uuid}/data-source/url'
-        data = {
-            "url": url_string
-        }
-
+        data = {"url": url_string}
         response = requests.post(urln, headers=self.headers, json=data)
-
         if response.status_code == 200:
-            print("Request successful!")
-            print(response.json())
+            print("Add source successful!")
             source_uuid = response.json().get('uuid')
-            print(source_uuid)
             return source_uuid
         else:
-            print("Request failed with status code:", response.status_code)
+            print("Add source failed:", response.status_code)
             print(response.text)
             return None
 
-    def Update_Source(self, uuids):
-        url = 'https://app.gpt-trainer.com/api/v1/data-sources/url/re-scrape'
-        data = {
-            "uuids": uuids
-        }
-
-        response = requests.post(url, headers=self.headers, json=data)
-
-        if response.status_code == 200:
-            print("Request successful!")
-            print(response.json())
-        else:
-            print("Request failed with status code:", response.status_code)
-            print(response.text)
-
     def Delete_Source(self, uuid):
         url = f'https://app.gpt-trainer.com/api/v1/data-source/{uuid}/delete'
-
         response = requests.post(url, headers=self.headers)
-
         if response.status_code == 200:
-            print("Request successful!")
-            print(response.json())
+            print(f"Deleted source {uuid}")
         else:
-            print("Request failed with status code:", response.status_code)
+            print("Delete source failed:", response.status_code)
             print(response.text)
 
     def URL(self, chatbotuuid, url_list, prompts, csv_headers):
         csv_file = "output.csv"
-        urluuid = [["" for _ in row] for row in url_list]
-
         with open(csv_file, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["URL"] + csv_headers)
 
-        for idx, row in enumerate(url_list):
-            print(f"Processing row {idx + 1}...")
-
-            for idy, single_url in enumerate(row):
-                self.create_sessionuuid(chatbotuuid)
-
-                uuid = self.Add_Source(chatbotuuid, single_url)
-                if not uuid:
-                    print(f"Failed to add source for URL: {single_url}")
-                    continue
-                urluuid[idx][idy] = uuid
-
+        for idx, target_url in enumerate(url_list):
+            self.create_sessionuuid(chatbotuuid)
+            prompt_list = prompts[0] if len(prompts) == 1 else prompts[idx]
+            urluuid = self.Add_Source(chatbotuuid, target_url)
+            if not urluuid:
+                continue
             time.sleep(10)
 
-            try:
-                prompt = prompts[0] if len(prompts) == 1 else prompts[idx]
+            responses = []
+            for prompt in prompt_list:
                 message_data = {"query": prompt}
+                try:
+                    response = self.create_message(message_data)
+                    lines = [line.strip() for line in response.strip().split('\n') if line.strip()] if response else []
+                    responses.append(lines[0] if lines else "")
+                except Exception as e:
+                    print(f"Error during message generation: {e}")
+                    responses.append("")
 
-                response = self.create_message(message_data)
-                if response:
-                    lines = [line.strip() for line in response.strip().split('\n') if line.strip()]
-                    while len(lines) < len(csv_headers):
-                        lines.append("")
-                    extracted_data = lines[:len(csv_headers)]
-
-                    with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
-                        writer = csv.writer(file)
-                        writer.writerow([", ".join(row)] + extracted_data)
-                else:
-                    print(f"Failed to create message for row {idx + 1}")
-                    continue
-
-            except Exception as e:
-                print(f"Error processing response for row {idx + 1}: {e}")
+            with open(csv_file, mode="a", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                writer.writerow([target_url] + responses)
 
             time.sleep(10)
+            self.Delete_Source(urluuid)
 
-            try:
-                for idy, uuid in enumerate(urluuid[idx]):
-                    if uuid: 
-                        self.Delete_Source(uuid)
-                        print(f"Source with UUID {uuid} deleted successfully.")
-            except Exception as e:
-                print(f"Error deleting sources for row {idx + 1}: {e}")
-
-        # Generate Markdown table from the CSV file
         df = pd.read_csv(csv_file)
         markdown_table = df.to_markdown(index=False, numalign="left", stralign="left")
         print(markdown_table)
-
-        # Save the Markdown table to a file
         with open("output.md", "w", encoding="utf-8") as f:
             f.write(markdown_table)
         print("Markdown table saved to output.md")
 
-    def readlafile(self, file):
+# ==========================
+# USAGE EXAMPLE
+# ==========================
 
-        if not os.path.exists(file):
-            print(f"File not found: {file}")
-            return None
-        file_extension = os.path.splitext(file)[1].lower()
-        if file_extension == ".json":
-            return self.readjson(file)
-        elif file_extension == ".csv":
-            return self.readcsv(file)
-        elif file_extension == ".txt":
-            return self.readtxt(file)
-        else:
-            print(f"Unsupported file format: {file_extension}")
-            return None
-
-    def readjson(self, file):
-        with open(file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-        print(f"Loaded JSON file: {file}")
-        return data
-
-    def readcsv(self, file):
-        data = []
-        with open(file, "r", newline="", encoding="utf-8") as file:
-            reader = csv.reader(file)
-            for row in reader:
-                data.append(row)
-        print(f"Loaded CSV file: {file}")
-        return data
-
-    def readtxt(self, file):
-        with open(file, "r", encoding="utf-8") as file:
-            data = [line.strip() for line in file.readlines()]
-        print(f"Loaded TXT file: {file}")
-        return data
-
-api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0MTIyNDg2NSwianRpIjoiMmVlZmJjNDctZjhkMS00YTg5LThlYWMtYzlhNTI0ZDE4ZDEwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJhcGlfa2V5IjoiYjk1YTEzZjE1ODgzYzRjMThiOGFlZDEyOThlNGEzZmMzMDk4Mjk0N2YyZTY4Nzg4MzZmYzU5ZmMyYzM4NTg2ZCJ9LCJuYmYiOjE3NDEyMjQ4NjV9.b3TiSWOufZZ8rOHQjey7_0n5B022fijBykATLXWdhQI'
+api_key = 'api_key_here' 
 gpt = GPT(api_key)
- 
+
 chatbot_data = {
-     "name": "URL Simplifier",
-     "rate_limit": [20, 240],
-     "rate_limit_message": "Too many messages",
-     "show_citations": False,
-     "visibility": "public"
- }
- 
-chatbotuuid="140b54b76e594762abb4c9f7985d826d"
-gpt.create_sessionuuid(chatbotuuid)
+    "name": "URL Simplifier",
+    "rate_limit": [20, 240],
+    "rate_limit_message": "Too many messages",
+    "show_citations": False,
+    "visibility": "public"
+}
+
+# gpt.create_chatbot(chatbot_data)
+chatbotuuid = "your_chatbot_uuid_here" 
 
 prompts = [
-    "Name, School, Department, Email, Research interests, Bio, Other links, all in different columns",
+    ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"],
+    ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"],
+    ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"],
+    ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"]
 ]
 
-urltests = gpt.readlafile("tests.txt")
-urltests = [line.split("|") for line in urltests]
-urltest = []
-for row in urltests:
-    for line in row:
-        urls = [url.strip() for url in line.split(",") if url.strip()]
-        if urls:
-            urltest.append(urls)
+url_list = [
+    "https://finance.wharton.upenn.edu/~itayg/",
+    "https://adamgrant.net/",
+    "https://leadership.wharton.upenn.edu/mike-useem/",
+    "https://jonahberger.com/"
+]
 
 csv_headers = ["Name", "School", "Department", "Email", "Research interests", "Bio", "Other links"]
-gpt.URL(chatbotuuid, urltest, prompts, csv_headers)
+
+gpt.URL(chatbotuuid, url_list, prompts, csv_headers)
